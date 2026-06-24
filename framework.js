@@ -24,7 +24,12 @@ export const render = (node, container) => {
 
     // Agregamos los atributos que existan al nodo elemento.
     for(const attr in node.props) {
-        element.setAttribute(attr, node.props[attr]);
+        if (attr.startsWith("on")) {
+            element[attr] = node.props[attr]; // Guardamos la funcion como una propiedad del elemento .
+
+        } else {
+            element.setAttribute(attr, node.props[attr]);
+        }
     };
 
     // Recorre todos los hijos tanto como si es un objeto o si es un texto y renderiza cada uno dentro del nodo elemento que se acaba de crear.
@@ -34,3 +39,28 @@ export const render = (node, container) => {
     container.appendChild(element);
 };
 
+export const createStore = (reducer, initialState) => {
+    // guardamos el estado inicial
+    let state = initialState;
+
+    // Lista de suscriptores
+    const listeners = [];
+
+    return {
+        getState: () => state,
+
+        subscribe: (listener) => {
+            listeners.push(listener);
+        },
+
+        dispatch: (action) => {
+            state = reducer(state, action);
+            listeners.forEach(listener => listener());
+        }
+    };
+};
+
+// Esta funcion crea otra funcion que crea un objeto js con la accion que se quiere realizar y con los datos que esa accion necesita.
+export const createAction = (type) => {
+    return (payload) => ({ type: type, payload: payload });
+}
