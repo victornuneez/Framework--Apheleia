@@ -1,3 +1,6 @@
+// Variable que guardara el valor del ultimo arbol de nodos renderizado.
+let oldNode = null;
+
 // Responsabilidad de la funcion: Construir y devolver un objeto js que representa el nodo de la interfaz.
 // Babel al llamar a la funcion entrega los datos por separado a esta funcion y las empaquetamos en un objeto js.
 // "..." Operador Rest: Al escrbir "...children" en los parametros de la funcion decimos que tome todos los parametros extra que lleguen 
@@ -60,7 +63,87 @@ export const createStore = (reducer, initialState) => {
     };
 };
 
-// Esta funcion crea otra funcion que crea un objeto js con la accion que se quiere realizar y con los datos que esa accion necesita.
+// Esta funcion crea otra funcion que crea un objeto js con la accion que se quiere realizar y con los datos que esa accion necesita .
 export const createAction = (type) => {
     return (payload) => ({ type: type, payload: payload });
-}
+};
+
+// Esta funcion decide si renderizar todo el DOM por primera vez o si debe compara el arbolr virtual anterior con el nuevo para aplicar las nuevos datos.
+export const update = (container, newNode) => {
+    if(oldNode === null) {
+        render(newNode, container);
+    } else {
+        reconcile(container, oldNode, newNode, 0);
+    }
+
+    oldNode = newNode;
+};
+
+
+export const reconcile = (parent, oldNode, newNode, index = 0) => {
+    // Contiene el nodo actual.
+    const currentNode = parent.childNodes[index];
+
+    // Crea nodos nuevos
+    if(oldNode === undefined || oldNode === null) {
+        render(newNode, parent);
+        return; 
+    }
+
+    // Elimina nodos que ya no existen en el nuevo arbol virtual. 
+    if(newNode === undefined || newNode === null) {
+        parent.removeChild(currentNode);
+        return;
+    }
+
+    // Reemplaza los nodos elemento que son actualizados a un distinto tipo de nodo elemento.
+    if(typeof oldNode !== typeof newNode || (typeof oldNode === 'object' && oldNode.type !== newNode.type)) {
+        const tempContainer = document.createElement('div');
+        render(newNode, tempContainer);
+
+        parent.replaceChild(tempContainer.firstChild, currentNode);
+        return;
+    }
+
+    // Reemplaza el contenido de los atributos y el contenidos de los nodo elementos.
+    if(typeof newNode === 'object') {
+        for (const atrr in newNode.props) { // El primer for compara y actualiza los atributos o eventos del nodo anterior con su nuevo valor.
+            if(newNode.props[atrr] !== oldNode.props[atrr]) {
+                
+                if(atrr.startsWith('on')) { // verifica si la propiedad es un evento y lo actualiza por el nuevo evento.
+                    currentNode[atrr] = newNode.props[atrr]
+                
+                } else {
+                    currentNode.setAttribute(atrr, newNode.props[atrr]) // actualiza el atributo html del nodo elemento.
+                }
+            }
+        }
+        
+        // El segundo for elimina los atributos y elementos no existen en el nuevo nodo elemento.
+        for (const atrr in oldNode.props) {
+            if(!(atrr in newNode.props)) {
+                
+                if(atrr.startsWith('on')) { // Eliminamos la funcion del evento 
+                    currentNode[atrr] = null;
+                
+                } else {
+                    currentNode.removeAttribute(atrr);
+                }
+            }
+        }
+
+        const oldChildren = oldNode.children || [];
+        const newChildren = newNode.children || [];
+
+        // Obtiene el numero de veces que el bucle debe repetirse.
+        const maxChildren = Math.max(oldChildren.length, newChildren.length);
+
+        for (let i = 0; i < maxChildren; i++) {
+            reconcile(currentNode, oldChildren[i], newChildren[i], i)
+        }
+    
+    // Si el nuevo nodo es un texto entonces actualizamos el contenido de nodo elemento por el nuevo.
+    } else if (typeof newNode === 'string' && oldNode !== newNode) {
+        currentNode.nodeValue = newNode;
+    }
+};
