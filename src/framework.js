@@ -19,7 +19,7 @@ export const createElement = (type, props, ...children) => {
 // Funcion reutilizable que crea recursivamente un DOM virtual con los nodos que le pases y lo devuelve
 const createDomNode = (vNode) => {
     // Validacion que corta la recusividad.
-    if(vNode.type === 'string') {
+    if(vNode.type === 'TEXT_ELEMENT') {
         return document.createTextNode(vNode.props.nodeValue);
     }
 
@@ -68,7 +68,7 @@ const updateProps = (dom, oldProps = {}, newProps = {}) => {
     Object.keys(newProps).forEach(key => {
         if(newProps[key] !== oldProps[key]) {
             if(key.startsWith('on')) {
-                const eventName = key.toLocaleLowerCase.substring(2);
+                const eventName = key.toLocaleLowerCase().substring(2);
                 
                 if(oldProps[key]) {
                     dom.removeEventListener(eventName, oldProps[key]);
@@ -104,23 +104,24 @@ export const reconcile = (parent, oldVNode, newVNode, index = 0) => {
         return;
     }
 
+    // El tipo de nodo de texto es distinto entonces lo actualizamos por el nuevo nodo de texto.
     if(oldVNode.type === "TEXT_ELEMENT") {
         if(oldVNode.props.nodeValue !== newVNode.props.nodeValue) {
             currentNode.nodeValue = newVNode.props.nodeValue;
         }
+        return;
     }
     
     // Los tipos de nodos elementos coinciden en la misma posicion, entonces se evaluan sus propiedades.
-    else {
-        updateProps(currentNode, oldVNode.props, newVNode.props);
-        
-        // Obtenemos los hijos de cada arbol virtual, repetimos el proceso recursivamente de reconcile el numero de veces que obtenga max.
-        const newChildren = newVNode.children || [];
-        const oldChildren = oldVNode.children || [];
-        const max = Math.max(newChildren.length, oldChildren.length);
+    updateProps(currentNode, oldVNode.props, newVNode.props);
     
-        for(let i = 0; i < max; i++) {
-            reconcile(currentNode, oldChildren[i], newChildren[i]);
+    // Obtenemos los hijos de cada arbol virtual, repetimos el proceso recursivamente de reconcile el numero de veces que obtenga max.
+    const newChildren = newVNode.children || [];
+    const oldChildren = oldVNode.children || [];
+    const max = Math.max(newChildren.length, oldChildren.length);
+
+    for(let i = 0; i < max; i++) {
+        reconcile(currentNode, oldChildren[i], newChildren[i]);
         }
     }
-}
+
