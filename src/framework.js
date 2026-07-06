@@ -1,4 +1,7 @@
-// Funcion que crea y devuelve un objeto js con la descripcion de un nodo o varios nodos.
+// Variable que guarda el ultimo arbol virtual renderizado en pantalla.
+let oldVDOM = null;
+
+// Funcion que crea y devuelve un objeto js con la descripcion de un nodo o varios nodos(VDOM).
 export const createElement = (type, props, ...children) => {
     return {
         type: type,
@@ -82,8 +85,8 @@ const updateProps = (dom, oldProps = {}, newProps = {}) => {
 };
 
 
-// Funcion que compara los nodos del viejo arbol virtual con los nodos del nuevo arbol virtual para que el DOM real sea identico al nuevo arbol virtual.
-export const reconcile = (parent, oldVNode, newVNode, index = 0) => {
+// Funcion que compara los nodos del viejo arbol virtual y el nuevo arbol virtual para que el DOM real se concilie con el nuevo arbol virtual.
+const reconcile = (parent, oldVNode, newVNode, index = 0) => {
     const currentNode = parent.childNodes[index]; // Obtenemos el nodo real del DOM.
 
     // El nuevo nodo no existe en la posicion del viejo nodo, entonces se borra el nodo actual en el dom real en esta posicion.
@@ -121,7 +124,45 @@ export const reconcile = (parent, oldVNode, newVNode, index = 0) => {
     const max = Math.max(newChildren.length, oldChildren.length);
 
     for(let i = 0; i < max; i++) {
-        reconcile(currentNode, oldChildren[i], newChildren[i]);
+        reconcile(currentNode, oldChildren[i], newChildren[i], i);
         }
     }
 
+
+// Esta funcion se encarga de decidir el primer renderizado y la comparacion de arboles virtuales.
+export const update = (container, newVNode) => {
+    if(!oldVDOM) {
+        mount(newVNode, container);
+    
+    } else {
+        reconcile(container, oldVDOM, newVNode)
+    }
+
+    oldVDOM = newVNode;
+};
+
+// Funcion que crea el store, maneja el estado y notifica los cambios. 
+export const createStore = (reducer, initialState) => {
+    let state = initialState;
+    let listeners = [];
+
+    return {
+        getState : () => state,
+        
+        dispatch : (action) => {
+            state = reducer(state, action) // El reducer toma el estado y una accion, y devuelve un nuevo estado.
+            listeners.forEach(listener => listener());
+        },
+        subscribe : (listener) => {
+            listeners.push(listener)
+        }
+    }
+};
+
+// Funcion que crea y devuelve una funcion que genera el objeto que describe una accion.
+export const createAction = (type) => {
+    return (payload) => ({ // 
+        type,
+        payload
+    });
+};
