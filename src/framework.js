@@ -6,7 +6,7 @@ export const createElement = (type, props, ...children) => {
     return {
         type: type,
         props: props || {},
-        children: children.map(child => {
+        children: children.flat().map(child => { // con flat devuelve un array con nodos, no un array con un array dentro de nuevo.
             if(typeof child === 'string' || typeof child === 'number') {
                 return {
                     type: 'TEXT_ELEMENT',
@@ -22,8 +22,8 @@ export const createElement = (type, props, ...children) => {
 // Funcion reutilizable que crea recursivamente un DOM virtual con los nodos que le pases y lo devuelve
 const createDomNode = (vNode) => {
 
-    // Validamos que el tipo de nodo que recibimos sea un nodo componente, si es asi lo ejecutamos.
-    // Y pasamos su valor que devuelve el nodo compo
+    // validamos si el tipo de nodo que recibimos es un componente, si es asi ejecutamos la funcion del componente y guardamos lo que devuelve.
+    // Llamamos a la recursion a la createDomNode para usar el objeto que describe la UI para renderizarlo en el DOM real.
     if(typeof vNode.type === 'function') {
         const vDom = vNode.type(vNode.props); // Ejecuta el componente y guarda lo que devuelve.
         return createDomNode(vDom);
