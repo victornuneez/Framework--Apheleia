@@ -21,6 +21,14 @@ export const createElement = (type, props, ...children) => {
 
 // Funcion reutilizable que crea recursivamente un DOM virtual con los nodos que le pases y lo devuelve
 const createDomNode = (vNode) => {
+
+    // Validamos que el tipo de nodo que recibimos sea un nodo componente, si es asi lo ejecutamos.
+    // Y pasamos su valor que devuelve el nodo compo
+    if(typeof vNode.type === 'function') {
+        const vDom = vNode.type(vNode.props); // Ejecuta el componente y guarda lo que devuelve.
+        return createDomNode(vDom);
+    }
+
     // Validacion que corta la recusividad.
     if(vNode.type === 'TEXT_ELEMENT') {
         return document.createTextNode(vNode.props.nodeValue);
