@@ -19,15 +19,21 @@ export const createElement = (type, props, ...children) => {
     }
 };
 
+// Esta funcion convierte los arboles de componentes a arboles de elementos HTML y texto.
+const runComponent = (vNode) => {
+    
+    if(typeof vNode.type === 'function') {
+        return runComponent(vNode.type(vNode.props));
+    }
+
+    return {
+        ...vNode,
+        children: vNode.children.map(child => runComponent(child))
+    }
+}
+
 // Funcion reutilizable que crea recursivamente un DOM virtual con los nodos que le pases y lo devuelve
 const createDomNode = (vNode) => {
-
-    // validamos si el tipo de nodo que recibimos es un componente, si es asi ejecutamos la funcion del componente y guardamos lo que devuelve.
-    // Llamamos a la recursion a la createDomNode para usar el objeto que describe la UI para renderizarlo en el DOM real.
-    if(typeof vNode.type === 'function') {
-        const vDom = vNode.type(vNode.props); // Ejecuta el componente y guarda lo que devuelve.
-        return createDomNode(vDom);
-    }
 
     // Validacion que corta la recusividad.
     if(vNode.type === 'TEXT_ELEMENT') {
@@ -131,6 +137,7 @@ const reconcile = (parent, oldVNode, newVNode, index = 0) => {
     const oldChildren = oldVNode.children || [];
     const max = Math.max(newChildren.length, oldChildren.length);
 
+
     for(let i = 0; i < max; i++) {
         reconcile(currentNode, oldChildren[i], newChildren[i], i);
         }
@@ -139,14 +146,16 @@ const reconcile = (parent, oldVNode, newVNode, index = 0) => {
 
 // Esta funcion se encarga de decidir el primer renderizado y la comparacion de arboles virtuales.
 export const update = (container, newVNode) => {
+    const vNodeHTML = runComponent(newVNode);
+
     if(!oldVDOM) {
-        mount(newVNode, container);
+        mount(vNodeHTML, container);
     
     } else {
-        reconcile(container, oldVDOM, newVNode)
+        reconcile(container, oldVDOM, vNodeHTML)
     }
 
-    oldVDOM = newVNode;
+    oldVDOM = vNodeHTML;
 };
 
 // Funcion que crea el store, maneja el estado y notifica los cambios. 
@@ -169,8 +178,10 @@ export const createStore = (reducer, initialState) => {
 
 // Funcion que crea y devuelve una funcion que genera el objeto que describe una accion.
 export const createAction = (type) => {
-    return (payload) => ({ // 
+    const actionCreator = (payload) => ({ // 
         type,
         payload
     });
+    actionCreator.type = type; // Le agregamos el valor del argumento type como propiedad type de la funcion que devolvemos.
+    return actionCreator; // Devolvemos la funcion actionCreator, que ahora tiene una propiedad adicional llamada type
 };
