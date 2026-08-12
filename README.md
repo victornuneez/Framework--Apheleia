@@ -123,13 +123,4 @@ render();
 | `createStore(reducer, initialState)` | Crea el store global de estado. |
 | `createAction(type)` | Crea un *action creator* con `type` asociado. |
 
-## Limitaciones conocidas
 
-- La reconciliación de listas se hace por índice, no por `key` única (puede haber renders sub-óptimos al reordenar listas).
-- No hay estado local por componente ni *hooks* (`useState`, `useEffect`); todo el estado vive en el store global.
-- `store.subscribe` no devuelve una función para desuscribirse.
-- Las importaciones `.jsx` no se ajustan automáticamente al transpilar (ver sección de arriba).
-
-## Licencia
-
-ISC
